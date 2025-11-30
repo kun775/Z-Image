@@ -64,7 +64,7 @@ git clone https://github.com/kaima2022/showimageweb.git
 cd showimageweb
 
 # 使用 Docker Compose 启动
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 方式二：本地部署
