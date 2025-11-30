@@ -328,6 +328,8 @@ st.markdown("""
         position: relative;
         box-shadow: var(--shadow-md);
         margin-bottom: 1rem;
+        /* 正方形画框容器 */
+        aspect-ratio: 1/1;
     }
 
     .gallery-card:hover {
@@ -338,15 +340,16 @@ st.markdown("""
 
     .gallery-card img {
         width: 100%;
-        height: 400px;
-        object-fit: contain;
+        height: 100%;
+        object-fit: cover;
         transition: var(--transition-slow);
         background: rgba(0,0,0,0.1);
+        /* 确保图片填满正方形容器 */
+        border-radius: var(--border-radius-md);
     }
 
     .gallery-card:hover img {
-        transform: scale(1.03);
-        height: 420px;
+        transform: scale(1.05);
     }
 
     /* 图片信息标签 */
@@ -504,22 +507,21 @@ st.markdown("""
             padding: 1.5rem;
         }
 
-        .gallery-card img {
-            height: 300px;
-        }
-
+        /* 保持正方形比例，但调整画框的缩放效果 */
         .gallery-card:hover img {
-            height: 320px;
+            transform: scale(1.03);
         }
     }
 
     @media (max-width: 480px) {
-        .gallery-card img {
-            height: 250px;
+        /* 小屏幕下略微减小悬停缩放效果 */
+        .gallery-card:hover img {
+            transform: scale(1.02);
         }
 
-        .gallery-card:hover img {
-            height: 270px;
+        /* 优化小屏幕下的卡片间距 */
+        .gallery-card {
+            margin-bottom: 0.75rem;
         }
     }
 
