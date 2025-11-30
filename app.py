@@ -971,39 +971,10 @@ if not st.session_state.history:
 else:
     history_items = st.session_state.history
 
-    # 画廊统计信息
+    # 获取统计信息但不立即显示
     total_images = len(history_items)
     total_duration = sum(float(item['duration'].rstrip('s')) for item in history_items)
     avg_duration = total_duration / total_images if total_images > 0 else 0
-
-    # 统计信息区域
-    st.markdown('<h4 style="color: #667eea; margin-bottom: 1rem; text-align: center;">📊 创作统计</h4>', unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric(
-            "🖼️ 作品总数",
-            f"{total_images}",
-            delta=None,
-            help="本次会话生成的图片总数"
-        )
-    with col2:
-        st.metric(
-            "⚡ 平均耗时",
-            f"{avg_duration:.1f}s",
-            delta=None,
-            help="所有图片的平均生成时间"
-        )
-    with col3:
-        st.metric(
-            "🕐 总时间",
-            f"{total_duration:.0f}s",
-            delta=None,
-            help="累计创作时间"
-        )
-
-    # 分隔线
-    st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(240, 147, 251, 0.1), transparent); margin: 2rem 0;"></div>', unsafe_allow_html=True)
 
     # 动态列数布局
     rows = [history_items[i:i + gallery_cols] for i in range(0, len(history_items), gallery_cols)]
@@ -1045,6 +1016,35 @@ else:
                 # 分隔线
                 if idx < len(row_items) - 1 or row_idx < len(rows) - 1:
                     st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
+
+    # 分隔线
+    st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(240, 147, 251, 0.1), transparent); margin: 3rem 0;"></div>', unsafe_allow_html=True)
+
+    # 统计信息区域 - 移到图片下方
+    st.markdown('<h4 style="color: #667eea; margin-bottom: 1rem; text-align: center;">📊 创作统计</h4>', unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(
+            "🖼️ 作品总数",
+            f"{total_images}",
+            delta=None,
+            help="本次会话生成的图片总数"
+        )
+    with col2:
+        st.metric(
+            "⚡ 平均耗时",
+            f"{avg_duration:.1f}s",
+            delta=None,
+            help="所有图片的平均生成时间"
+        )
+    with col3:
+        st.metric(
+            "🕐 总时间",
+            f"{total_duration:.0f}s",
+            delta=None,
+            help="累计创作时间"
+        )
 
     # 底部装饰和更多功能
     st.markdown("""
