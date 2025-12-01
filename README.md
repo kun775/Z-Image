@@ -13,8 +13,7 @@
 
 </div>
 
-AI图像生成网页交互平台 - 基于Streamlit构建的Web应用，提供简洁的用户界面和实用的图像生成功能
-
+AI图像生成网页交互平台 - 基于Streamlit构建的Web应用，提供简洁的用户界面和实用的图像生成功能 - **对手机UI界面进行了优化**
 ## 应用预览
 
 ![ShowImageWeb Demo](assets/showimage-web-demo.png)
