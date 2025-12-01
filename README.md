@@ -57,9 +57,9 @@ showimageweb/
 
 ## 快速开始
 
-## 部署方式
+## 使用方式
 
-### 方式一：Docker 部署（推荐）
+### 方式一：Docker 部署（灵活）
 
 ```bash
 # 克隆项目
@@ -70,7 +70,7 @@ cd ShowImageWeb
 docker compose up -d
 ```
 
-### 方式二：本地部署
+### 方式二：非容器化直接运行（快速）
 
 ```bash
 # 克隆项目
