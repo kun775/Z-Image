@@ -17,6 +17,110 @@ HISTORY_DIR = Path("data")
 HISTORY_FILE = HISTORY_DIR / "history.json"
 MAX_HISTORY_ITEMS = 50  # 最多保存50条记录
 
+# 访问验证文件路径
+AUTH_FILE = HISTORY_DIR / "auth.json"
+AUTH_EXPIRY_DAYS = 7  # 验证有效期7天
+
+# --- 0. 访问密码验证功能 ---
+def load_auth_info():
+    """加载验证信息"""
+    try:
+        if AUTH_FILE.exists():
+            with open(AUTH_FILE, 'r', encoding='utf-8') as f:
+                auth_data = json.load(f)
+                return auth_data
+        return None
+    except:
+        return None
+
+def save_auth_info():
+    """保存验证信息"""
+    try:
+        HISTORY_DIR.mkdir(exist_ok=True)
+        auth_data = {
+            "verified": True,
+            "timestamp": time.time()
+        }
+        with open(AUTH_FILE, 'w', encoding='utf-8') as f:
+            json.dump(auth_data, f)
+    except:
+        pass
+
+def is_auth_valid():
+    """检查验证是否有效（7天内）"""
+    auth_data = load_auth_info()
+    if not auth_data:
+        return False
+    if not auth_data.get("verified", False):
+        return False
+    timestamp = auth_data.get("timestamp", 0)
+    elapsed_days = (time.time() - timestamp) / (24 * 3600)
+    return elapsed_days < AUTH_EXPIRY_DAYS
+
+def check_password(password, correct_password):
+    """验证密码"""
+    return password == correct_password
+
+# 检查访问密码
+access_password = os.getenv("ACCESS_PASSWORD", "")
+if access_password:
+    # 如果配置了访问密码，检查验证状态
+    if not is_auth_valid():
+        # 显示密码输入界面
+        st.markdown("""
+        <style>
+        .password-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+        .password-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        st.markdown('<div class="password-container">', unsafe_allow_html=True)
+        st.markdown('<div class="password-box">', unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="color: white; font-size: 2.5rem; margin-bottom: 1rem;">🔒</h1>
+            <h2 style="color: white; font-size: 1.8rem; margin-bottom: 0.5rem;">访问验证</h2>
+            <p style="color: rgba(255,255,255,0.8); font-size: 1rem;">请输入访问密码</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        input_password = st.text_input(
+            "访问密码",
+            type="password",
+            placeholder="请输入密码",
+            key="access_password_input",
+            label_visibility="visible"
+        )
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("验证", type="primary", use_container_width=True, key="verify_password"):
+                if check_password(input_password, access_password):
+                    save_auth_info()
+                    st.success("验证成功！")
+                    st.rerun()
+                else:
+                    st.error("密码错误，请重试")
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
+        st.stop()
+
 # --- 1. 页面基础配置 ---
 st.set_page_config(
     page_title="ShowImageWeb - AI图像生成器",
@@ -331,12 +435,12 @@ st.markdown("""
         box-shadow: 0 8px 20px rgba(19, 180, 151, 0.3) !important;
     }
 
-    /* 主标题区域 - 增强版 */
+    /* 主标题区域 - 紧凑版 */
     .main-header {
         text-align: center;
-        margin-bottom: 3rem;
+        margin-bottom: 1.5rem;
         position: relative;
-        padding: 2rem 0;
+        padding: 1rem 0;
     }
     
     .main-header::before {
@@ -959,30 +1063,30 @@ with st.sidebar:
 # 顶部锚点 - 强制页面从这里开始
 st.markdown('<div id="top" style="height: 1px; width: 1px; visibility: hidden;"></div>', unsafe_allow_html=True)
 
-# 主标题区域 - 优化版
+# 主标题区域 - 紧凑版
 st.markdown("""
-<div class="main-header floating">
-    <h1>ShowImageWeb</h1>
-    <p>🎨 AI图像生成 - 将您的想象力转化为视觉艺术</p>
+<div class="main-header floating" style="margin-bottom: 1.5rem;">
+    <h1 style="margin-bottom: 0.5rem !important;">ShowImageWeb</h1>
+    <p style="margin: 0 !important;">🎨 AI图像生成 - 将您的想象力转化为视觉艺术</p>
 </div>
 """, unsafe_allow_html=True)
 
-# 输入区域容器 - 新的现代化设计
+# 输入区域容器 - 紧凑设计
 st.markdown("""
-<div style="max-width: 1200px; margin: 0 auto 3rem auto; padding: 0 1rem;">
+<div style="max-width: 1200px; margin: 0 auto 1.5rem auto; padding: 0 1rem;">     
     <div class="input-section" style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); 
                 border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 20px; 
-                padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
 """, unsafe_allow_html=True)
 
-# 输入区域标题
+# 输入区域标题 - 紧凑版
 st.markdown("""
-<div style="margin-bottom: 1.5rem;">
-    <h3 style="color: rgba(255,255,255,0.95); font-size: 1.3rem; margin-bottom: 0.5rem; 
+<div style="margin-bottom: 1rem;">
+    <h3 style="color: rgba(255,255,255,0.95); font-size: 1.2rem; margin-bottom: 0.3rem; 
                display: flex; align-items: center; gap: 0.5rem;">
         <span>✨</span> 创意输入
     </h3>
-    <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin: 0;">
+    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0;">
         描述您想要生成的图像，AI将为您创作独特的艺术作品
     </p>
 </div>
@@ -1043,15 +1147,15 @@ with col_button:
 # 关闭输入区域容器
 st.markdown("</div></div>", unsafe_allow_html=True)
 
-# 快速示例提示 - 重新设计的卡片式布局
+# 快速示例提示 - 紧凑布局
 if not st.session_state.is_generating and not st.session_state.saved_prompt and not st.session_state.has_generated:
     st.markdown("""
-    <div style="max-width: 1200px; margin: 2rem auto 3rem auto; padding: 0 1rem;">
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-            <h3 style="color: rgba(255,255,255,0.95); font-size: 1.2rem; margin-bottom: 0.5rem;">
+    <div style="max-width: 1200px; margin: 1rem auto 1.5rem auto; padding: 0 1rem;">
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <h3 style="color: rgba(255,255,255,0.95); font-size: 1.1rem; margin-bottom: 0.3rem;">
                 💡 灵感示例
             </h3>
-            <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
                 点击下方卡片快速填充创意描述
             </p>
         </div>
@@ -1257,50 +1361,47 @@ if st.session_state.is_generating or (hasattr(st.session_state, 'is_processing')
 
 # --- 7. 超现代化画廊展示区 ---
 
-# 画廊标题和装饰 - 优化版
+# 画廊标题和装饰 - 紧凑版
 st.markdown("""
-<div style="text-align: center; margin: 4rem 0 3rem 0; padding: 0 1rem;">
+<div style="text-align: center; margin: 2rem 0 1.5rem 0; padding: 0 1rem;">
     <div style="max-width: 1200px; margin: 0 auto;">
-        <h2 style="color: white; font-size: 2.8rem; margin-bottom: 1rem; font-weight: 800;">
+        <h2 style="color: white; font-size: 2.2rem; margin-bottom: 0.5rem; font-weight: 800;">
             🎨 AI 作品画廊
         </h2>
-        <div style="height: 4px; background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
+        <div style="height: 3px; background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
                     background-size: 300% 100%; animation: gradientShift 3s ease infinite;
-                    border-radius: 5px; margin: 0 auto; width: 300px; margin-bottom: 1rem;"></div>
-        <p style="color: rgba(255,255,255,0.7); font-size: 1rem; margin-top: 1rem;">
-            您的AI创作作品将在这里展示
-        </p>
+                    border-radius: 5px; margin: 0 auto; width: 250px;"></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 if not st.session_state.history:
-    # 空状态精美提示 - 优化版
+    # 空状态提示 - 紧凑版
     st.markdown("""
-    <div style="max-width: 800px; margin: 0 auto; text-align: center; padding: 5rem 2rem;">
-        <div style="font-size: 6rem; margin-bottom: 2rem; animation: float 6s ease-in-out infinite;">🎨</div>
-        <h3 style="color: rgba(255,255,255,0.95); font-size: 2rem; margin-bottom: 1rem; font-weight: 700;">
+    <div style="max-width: 700px; margin: 0 auto; text-align: center; padding: 3rem 1.5rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; animation: float 6s ease-in-out infinite;">🎨</div>
+        <h3 style="color: rgba(255,255,255,0.95); font-size: 1.5rem; margin-bottom: 0.5rem; font-weight: 700;">
             开始您的创作之旅
         </h3>
-        <p style="color: rgba(255,255,255,0.8); font-size: 1.2rem; line-height: 1.8; margin-bottom: 3rem;">
+        <p style="color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem;">
             还没有生成的图像<br>
             在上方描述您的创意，让AI为您创作独特的艺术作品吧！
         </p>
-        <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
             <div style="background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.3); 
-                        padding: 1rem 1.5rem; border-radius: 25px; backdrop-filter: blur(10px);">
-                <span style="font-size: 1.2rem;">✨</span>
-                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem;">高质量生成</span>
+                        padding: 0.75rem 1.25rem; border-radius: 20px; backdrop-filter: blur(10px);">
+                <span style="font-size: 1rem;">✨</span>
+                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem; font-size: 0.9rem;">高质量生成</span>
             </div>
             <div style="background: rgba(240, 147, 251, 0.2); border: 1px solid rgba(240, 147, 251, 0.3); 
-                        padding: 1rem 1.5rem; border-radius: 25px; backdrop-filter: blur(10px);">
-                <span style="font-size: 1.2rem;">🚀</span>
-                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem;">秒级出图</span>
+                        padding: 0.75rem 1.25rem; border-radius: 20px; backdrop-filter: blur(10px);">
+                <span style="font-size: 1rem;">🚀</span>
+                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem; font-size: 0.9rem;">秒级出图</span>
             </div>
             <div style="background: rgba(19, 180, 151, 0.2); border: 1px solid rgba(19, 180, 151, 0.3); 
-                        padding: 1rem 1.5rem; border-radius: 25px; backdrop-filter: blur(10px);">
-                <span style="font-size: 1.2rem;">💾</span>
-                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem;">一键下载</span>
+                        padding: 0.75rem 1.25rem; border-radius: 20px; backdrop-filter: blur(10px);">
+                <span style="font-size: 1rem;">💾</span>
+                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem; font-size: 0.9rem;">一键下载</span>
             </div>
         </div>
     </div>
@@ -1361,10 +1462,10 @@ else:
     st.markdown('</div>', unsafe_allow_html=True)
 
     # 分隔线
-    st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(240, 147, 251, 0.1), transparent); margin: 3rem 0;"></div>', unsafe_allow_html=True)
+    st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(240, 147, 251, 0.1), transparent); margin: 2rem 0;"></div>', unsafe_allow_html=True)
 
-    # 统计信息区域 - 移到图片下方
-    st.markdown('<h4 style="color: #667eea; margin-bottom: 1rem; text-align: center;">📊 创作统计</h4>', unsafe_allow_html=True)
+    # 统计信息区域 - 紧凑版
+    st.markdown('<h4 style="color: #667eea; margin-bottom: 0.75rem; text-align: center; font-size: 1rem;">📊 创作统计</h4>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -1389,36 +1490,28 @@ else:
             help="累计创作时间"
         )
 
-    # 底部装饰和更多功能
+    # 底部装饰 - 紧凑版
     st.markdown("""
-    <div style="text-align: center; margin-top: 3rem;">
-        <div style="height: 2px; background: linear-gradient(90deg, transparent, #667eea, transparent);
-                    border-radius: 5px; margin-bottom: 2rem;"></div>
-        <p style="color: rgba(255,255,255,0.7); font-size: 1rem;">
-            🎯 继续创作更多精彩作品<br>
-            <span style="font-size: 0.9rem; opacity: 0.7;">每一张都是独一无二的AI艺术</span>
+    <div style="text-align: center; margin-top: 1.5rem;">
+        <div style="height: 2px; background: linear-gradient(90deg, transparent, #667eea, transparent); 
+                    border-radius: 5px; margin-bottom: 1rem;"></div>
+        <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+            🎯 继续创作更多精彩作品
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-# 页脚区域
+# 页脚区域 - 紧凑版
 st.markdown("""
-<footer style="margin-top: 4rem; padding: 2rem 0; border-top: 1px solid rgba(255,255,255,0.1);">
-    <div style="text-align: center; color: rgba(255,255,255,0.6);">
-        <p style="margin-bottom: 1rem;">
-            <span style="display: inline-block; margin: 0 1rem;">
-                🚀 <strong>极速生成</strong> - 秒级出图
-            </span>
-            <span style="display: inline-block; margin: 0 1rem;">
-                🎨 <strong>高品质</strong> - 专业AI算法
-            </span>
-            <span style="display: inline-block; margin: 0 1rem;">
-                💾 <strong>无限存储</strong> - 永久保存
-            </span>
-        </p>
-        <p style="font-size: 0.9rem; opacity: 0.7;">
-            Powered by Advanced AI Technology |
-            <span style="color: #667eea;">ShowImageWeb</span> © 2025
+<footer style="margin-top: 2rem; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.1);">
+    <div style="text-align: center; color: rgba(255,255,255,0.6); max-width: 1200px; margin: 0 auto;">
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            <span style="font-size: 0.85rem;">🚀 <strong>极速生成</strong></span>
+            <span style="font-size: 0.85rem;">🎨 <strong>高品质</strong></span>
+            <span style="font-size: 0.85rem;">💾 <strong>无限存储</strong></span>
+        </div>
+        <p style="font-size: 0.8rem; opacity: 0.7;">
+            Powered by Advanced AI Technology | <span style="color: #667eea;">ShowImageWeb</span> © 2025
         </p>
     </div>
 </footer>
