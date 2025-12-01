@@ -6,10 +6,16 @@ import random
 from datetime import datetime
 import json
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # 加载环境变量
 load_dotenv()
+
+# 历史记录文件路径
+HISTORY_DIR = Path("data")
+HISTORY_FILE = HISTORY_DIR / "history.json"
+MAX_HISTORY_ITEMS = 50  # 最多保存50条记录
 
 # --- 1. 页面基础配置 ---
 st.set_page_config(
@@ -668,9 +674,56 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. 状态管理 ---
-# 初始化历史记录
+
+def load_history_from_file():
+    """从文件加载历史记录"""
+    try:
+        if HISTORY_FILE.exists():
+            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+                history = json.load(f)
+                # 确保返回的是列表
+                if isinstance(history, list):
+                    # 兼容旧格式：如果没有full_time字段，添加它
+                    for item in history:
+                        if 'full_time' not in item and 'time' in item:
+                            # 尝试从time字段推断full_time，如果无法推断则使用当前时间
+                            item['full_time'] = item['time']
+                    return history
+                return []
+        return []
+    except Exception as e:
+        # 静默处理错误，避免影响首次使用
+        return []
+
+def save_history_to_file(history):
+    """保存历史记录到文件"""
+    try:
+        # 确保目录存在
+        HISTORY_DIR.mkdir(exist_ok=True)
+        
+        # 限制保存的记录数量，只保存最新的MAX_HISTORY_ITEMS条
+        history_to_save = history[:MAX_HISTORY_ITEMS]
+        
+        # 保存到文件
+        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history_to_save, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        st.error(f"保存历史记录失败: {str(e)}")
+
+def delete_history_file():
+    """删除历史记录文件"""
+    try:
+        if HISTORY_FILE.exists():
+            HISTORY_FILE.unlink()
+    except Exception as e:
+        st.error(f"删除历史记录文件失败: {str(e)}")
+
+# 初始化历史记录 - 从文件加载
 if 'history' not in st.session_state:
-    st.session_state.history = []
+    st.session_state.history = load_history_from_file()
+    # 如果从文件加载了历史记录，标记为已生成
+    if st.session_state.history:
+        st.session_state.has_generated = True
 
 # 初始化生成状态（用于控制按钮变灰）
 if 'is_generating' not in st.session_state:
@@ -686,27 +739,36 @@ if 'saved_prompt' not in st.session_state:
 
 # 初始化生成记录状态
 if 'has_generated' not in st.session_state:
-    st.session_state.has_generated = False
+    st.session_state.has_generated = len(st.session_state.history) > 0
 
 def add_to_history(prompt, image_bytes, seed, duration):
     """将生成的图片添加到历史记录的最前面"""
-    timestamp = datetime.now().strftime("%H:%M:%S")
+    now = datetime.now()
+    display_time = now.strftime("%H:%M:%S")  # 简洁时间用于显示
+    full_time = now.strftime("%Y-%m-%d %H:%M:%S")  # 完整时间用于存储
     # 只存储base64编码，节省内存
     base64_image = base64.b64encode(image_bytes).decode()
-    st.session_state.history.insert(0, {
+    new_item = {
         "id": f"{int(time.time())}",
         "prompt": prompt,
         "base64_image": base64_image,  # 只存储base64
         "seed": seed,
-        "time": timestamp,
+        "time": display_time,  # 显示用简洁时间
+        "full_time": full_time,  # 完整时间用于排序和存储
         "duration": f"{duration:.2f}s"
-    })
+    }
+    st.session_state.history.insert(0, new_item)
     # 标记已有生成记录
     st.session_state.has_generated = True
+    # 保存到文件
+    save_history_to_file(st.session_state.history)
 
 def clear_history():
+    """清空历史记录"""
     st.session_state.history = []
     st.session_state.has_generated = False
+    # 删除文件
+    delete_history_file()
 
 def start_generating():
     """点击按钮时的回调：设置状态为生成中"""
@@ -820,6 +882,17 @@ with st.sidebar:
     st.markdown('<h4 style="color: #13B497; margin-bottom: 0.5rem; font-size: 0.9rem;">📊 统计信息</h4>', unsafe_allow_html=True)
 
     history_count = len(st.session_state.history)
+    
+    # 显示持久化状态
+    if HISTORY_FILE.exists():
+        st.markdown("""
+        <div style="background: rgba(19, 180, 151, 0.1); border-left: 3px solid #13B497; 
+                    border-radius: 6px; padding: 0.5rem; margin-bottom: 0.75rem;">
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.75rem; margin: 0;">
+                💾 历史记录已持久化保存
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
     # 高级统计卡片
     col1, col2 = st.columns(2)

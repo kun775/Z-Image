@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制应用代码
 COPY app.py .
+COPY .env .
 
 # 暴露 Streamlit 默认端口
 EXPOSE 8501

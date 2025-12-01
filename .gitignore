@@ -152,3 +152,6 @@ Thumbs.db
 
 # Docker
 .dockerignore
+
+# 应用数据目录（包含历史记录）
+data/
