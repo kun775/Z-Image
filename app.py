@@ -5,6 +5,11 @@ import time
 import random
 from datetime import datetime
 import json
+import os
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
 
 # --- 1. 页面基础配置 ---
 st.set_page_config(
@@ -56,12 +61,40 @@ st.markdown("""
         --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* 全局背景设计 */
+    /* 全局背景设计 - 增强版 */
     .stApp {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
         background-attachment: fixed;
         min-height: 100vh;
         position: relative;
+        overflow-x: hidden;
+    }
+    
+    /* 添加动态星空背景 */
+    .stApp::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.8), transparent),
+            radial-gradient(2px 2px at 60% 70%, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1px 1px at 50% 50%, rgba(255,255,255,0.9), transparent),
+            radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.7), transparent),
+            radial-gradient(2px 2px at 90% 60%, rgba(255,255,255,0.5), transparent),
+            radial-gradient(1px 1px at 33% 80%, rgba(255,255,255,0.8), transparent);
+        background-size: 200% 200%;
+        background-position: 0% 0%;
+        animation: starMove 30s linear infinite;
+        z-index: -1;
+        opacity: 0.6;
+    }
+    
+    @keyframes starMove {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
     }
 
     /* 动态背景粒子效果 */
@@ -205,7 +238,7 @@ st.markdown("""
         outline: none !important;
     }
 
-    /* 按钮系统重设计 */
+    /* 按钮系统重设计 - 增强版 */
     div.stButton > button {
         background: var(--primary-gradient) !important;
         color: white !important;
@@ -220,6 +253,25 @@ st.markdown("""
         overflow: hidden;
         text-transform: uppercase;
         letter-spacing: 1px;
+        cursor: pointer;
+    }
+    
+    div.stButton > button::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    
+    div.stButton > button:active::after {
+        width: 300px;
+        height: 300px;
     }
 
     div.stButton > button::before {
@@ -273,24 +325,53 @@ st.markdown("""
         box-shadow: 0 8px 20px rgba(19, 180, 151, 0.3) !important;
     }
 
-    /* 主标题区域 */
+    /* 主标题区域 - 增强版 */
     .main-header {
         text-align: center;
         margin-bottom: 3rem;
         position: relative;
+        padding: 2rem 0;
+    }
+    
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(102, 126, 234, 0.3) 0%, transparent 70%);
+        border-radius: 50%;
+        filter: blur(60px);
+        animation: pulseGlow 4s ease-in-out infinite;
+        z-index: -1;
+    }
+    
+    @keyframes pulseGlow {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+        50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
     }
 
     .main-header h1 {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
         font-size: 4rem !important;
         font-weight: 900 !important;
-        background: linear-gradient(135deg, #ffffff, #f0f0f0, #ffffff);
+        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 50%, #ffffff 100%);
+        background-size: 200% 200%;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         text-shadow: 0 0 50px rgba(255,255,255,0.3);
         margin-bottom: 1rem !important;
-        animation: titleFloat 6s ease-in-out infinite;
+        animation: titleFloat 6s ease-in-out infinite, titleShine 3s ease-in-out infinite;
+        position: relative;
+        letter-spacing: -2px;
+    }
+    
+    @keyframes titleShine {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
     }
 
     @keyframes titleFloat {
@@ -305,7 +386,7 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 输入区域高级容器 */
+    /* 输入区域高级容器 - 增强版 */
     .input-section {
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
@@ -315,13 +396,36 @@ st.markdown("""
         margin-bottom: 2rem;
         box-shadow: var(--shadow-xl);
         position: relative;
+        overflow: hidden;
+    }
+    
+    .input-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(from 0deg, transparent, rgba(102, 126, 234, 0.1), transparent 30%);
+        animation: rotateBorder 10s linear infinite;
+        z-index: 0;
+    }
+    
+    .input-section > * {
+        position: relative;
+        z-index: 1;
+    }
+    
+    @keyframes rotateBorder {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
-    /* 图片画廊卡片系统 */
+    /* 图片画廊卡片系统 - 增强版 */
     .gallery-card {
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.2);
         border-radius: var(--border-radius-md);
         overflow: hidden;
         transition: var(--transition-normal);
@@ -331,11 +435,30 @@ st.markdown("""
         /* 正方形画框容器 */
         aspect-ratio: 1/1;
     }
+    
+    .gallery-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(240, 147, 251, 0.1));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 1;
+        pointer-events: none;
+    }
 
     .gallery-card:hover {
         transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        box-shadow: 0 25px 50px rgba(102, 126, 234, 0.4), 0 0 30px rgba(240, 147, 251, 0.3);
         background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(102, 126, 234, 0.5);
+    }
+    
+    .gallery-card:hover::before {
+        opacity: 1;
     }
 
     .gallery-card img {
@@ -604,18 +727,63 @@ with st.sidebar:
     # API配置区域
     st.markdown('<h4 style="color: #667eea; margin-bottom: 0.5rem; font-size: 0.9rem;">🔑 API 配置</h4>', unsafe_allow_html=True)
 
+    # 从环境变量读取默认值
+    default_api_base_url = os.getenv("API_BASE_URL", "https://z-api.aioec.tech/proxy/generate")
+    default_api_key = os.getenv("API_KEY", "")
+    
     api_base_url = st.text_input(
         "🌐 API Endpoint",
-        value="https://z-api.aioec.tech/proxy/generate",
-        help="完整的API接口地址",
+        value=default_api_base_url,
+        help="完整的API接口地址（可通过.env文件配置）",
         label_visibility="visible"
     )
-    api_key = st.text_input(
-        "🔐 API Key",
-        type="password",
-        placeholder="sk-...",
-        help="输入您的API密钥"
-    )
+    
+    # 如果.env中有配置，显示已配置状态，否则允许手动输入
+    if default_api_key:
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(19, 180, 151, 0.25), rgba(89, 212, 168, 0.15)); 
+                    border: 1px solid rgba(19, 180, 151, 0.5); 
+                    border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem;
+                    box-shadow: 0 4px 15px rgba(19, 180, 151, 0.2);
+                    animation: pulseSuccess 2s ease-in-out infinite;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.2rem;">✅</span>
+                <span style="color: #13B497; font-size: 0.9rem; font-weight: 600;">API Key已从环境变量加载</span>
+            </div>
+        </div>
+        <style>
+        @keyframes pulseSuccess {{
+            0%, 100% {{ box-shadow: 0 4px 15px rgba(19, 180, 151, 0.2); }}
+            50% {{ box-shadow: 0 4px 20px rgba(19, 180, 151, 0.4); }}
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+        api_key = default_api_key
+        # 显示掩码后的key（显示前4位和后4位）
+        masked_key = f"{default_api_key[:4]}...{default_api_key[-4:]}" if len(default_api_key) > 8 else "***"
+        st.markdown(f"""
+        <div style="background: rgba(19, 180, 151, 0.1); border-left: 3px solid #13B497; 
+                    border-radius: 6px; padding: 0.6rem; margin-top: -0.5rem; margin-bottom: 0.5rem;">
+            <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin: 0;">
+                <span style="color: #13B497;">🔑</span> 当前Key: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">{masked_key}</code>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); 
+                    border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin: 0;">
+                💡 提示：可通过创建 <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">.env</code> 文件配置API Key
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        api_key = st.text_input(
+            "🔐 API Key",
+            type="password",
+            placeholder="sk-...",
+            help="输入您的API密钥（或通过.env文件配置API_KEY）"
+        )
 
     # 分隔线
     st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1), transparent); margin: 1rem 0;"></div>', unsafe_allow_html=True)

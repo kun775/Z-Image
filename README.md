@@ -107,9 +107,29 @@ http://localhost:8501
 - **响应格式**: `{"base64": "..."}`
 
 ### 配置说明
-1. **API URL**: 完整的API接口地址（如：`https://api.example.com/v1/generate`）
-2. **API Key**: 您的API密钥
+
+#### 方式一：通过环境变量配置（推荐）
+
+1. 复制 `env.example` 文件为 `.env`：
+```bash
+cp env.example .env
+```
+
+2. 编辑 `.env` 文件，填入您的API配置：
+```bash
+API_KEY=sk-your-api-key-here
+API_BASE_URL=https://z-api.aioec.tech/proxy/generate
+```
+
+3. 应用启动时会自动从 `.env` 文件加载配置，侧边栏会显示"✅ API Key已从环境变量加载"
+
+#### 方式二：通过界面配置
+
+1. **API URL**: 在侧边栏输入完整的API接口地址（如：`https://api.example.com/v1/generate`）
+2. **API Key**: 在侧边栏输入您的API密钥
 3. **种子设置**: 支持随机种子或固定种子复现结果
+
+> 💡 **提示**: 优先使用 `.env` 文件配置，更安全且方便管理
 
 ### 兼容的服务
 - OpenAI DALL-E API
