@@ -1072,12 +1072,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 输入区域容器 - 紧凑设计
-st.markdown("""
-<div style="max-width: 1200px; margin: 0 auto 1.5rem auto; padding: 0 1rem;">     
-    <div class="input-section" style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); 
-                border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 20px; 
-                padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-""", unsafe_allow_html=True)
+# st.markdown("""
+# <div style="max-width: 1200px; margin: 0 auto 1.5rem auto; padding: 0 1rem;">     
+#     <div class="input-section" style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); 
+#                 border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 20px; 
+#                 padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+# """, unsafe_allow_html=True)
 
 # 输入区域标题 - 紧凑版
 st.markdown("""
