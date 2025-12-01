@@ -741,6 +741,10 @@ if 'saved_prompt' not in st.session_state:
 if 'has_generated' not in st.session_state:
     st.session_state.has_generated = len(st.session_state.history) > 0
 
+# 初始化用户输入的API Key（优先于.env配置）
+if 'user_api_key' not in st.session_state:
+    st.session_state.user_api_key = ""
+
 def add_to_history(prompt, image_bytes, seed, duration):
     """将生成的图片添加到历史记录的最前面"""
     now = datetime.now()
@@ -792,60 +796,77 @@ with st.sidebar:
     # 从环境变量读取默认值
     default_api_base_url = os.getenv("API_BASE_URL", "https://z-api.aioec.tech/proxy/generate")
     default_api_key = os.getenv("API_KEY", "")
-    
+
     api_base_url = st.text_input(
         "🌐 API Endpoint",
         value=default_api_base_url,
         help="完整的API接口地址（可通过.env文件配置）",
         label_visibility="visible"
     )
+
+    # API Key优先级管理：用户输入 > session_state > .env
+    # 永远显示输入框，让用户可以输入或修改
+    user_input_api_key = st.text_input(
+        "🔐 API Key",
+        value=st.session_state.user_api_key,
+        type="password",
+        placeholder="sk-...",
+        help="输入您的API密钥（优先于.env配置，清空后使用.env中的配置）",
+        key="api_key_input"
+    )
     
-    # 如果.env中有配置，显示已配置状态，否则允许手动输入
-    if default_api_key:
+    # 更新session_state中的用户输入（每次rerun时同步）
+    if user_input_api_key.strip():
+        # 用户输入了内容，保存到session_state
+        st.session_state.user_api_key = user_input_api_key.strip()
+    else:
+        # 用户清空了输入框，清除session_state，回退到.env
+        st.session_state.user_api_key = ""
+    
+    # 确定最终使用的API Key（优先级：用户输入 > .env）
+    if st.session_state.user_api_key:
+        # 用户输入了API Key，优先使用
+        api_key = st.session_state.user_api_key
+        key_source = "用户输入"
+        masked_key = f"{api_key[:4]}...{api_key[-4:]}" if len(api_key) > 8 else "***"
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.15)); 
+                    border: 1px solid rgba(102, 126, 234, 0.5); 
+                    border-radius: 12px; padding: 0.75rem; margin-top: 0.5rem; margin-bottom: 0.5rem;
+                    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);">
+            <p style="color: rgba(255,255,255,0.9); font-size: 0.85rem; margin: 0;">
+                <span style="color: #667eea;">✨</span> 当前使用：<code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">{masked_key}</code>
+                <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem; margin-left: 0.5rem;">(用户输入)</span>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    elif default_api_key:
+        # 使用.env中的API Key
+        api_key = default_api_key
+        key_source = "环境变量"
+        masked_key = f"{default_api_key[:4]}...{default_api_key[-4:]}" if len(default_api_key) > 8 else "***"
         st.markdown(f"""
         <div style="background: linear-gradient(135deg, rgba(19, 180, 151, 0.25), rgba(89, 212, 168, 0.15)); 
                     border: 1px solid rgba(19, 180, 151, 0.5); 
-                    border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem;
-                    box-shadow: 0 4px 15px rgba(19, 180, 151, 0.2);
-                    animation: pulseSuccess 2s ease-in-out infinite;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 1.2rem;">✅</span>
-                <span style="color: #13B497; font-size: 0.9rem; font-weight: 600;">API Key已从环境变量加载</span>
-            </div>
-        </div>
-        <style>
-        @keyframes pulseSuccess {{
-            0%, 100% {{ box-shadow: 0 4px 15px rgba(19, 180, 151, 0.2); }}
-            50% {{ box-shadow: 0 4px 20px rgba(19, 180, 151, 0.4); }}
-        }}
-        </style>
-        """, unsafe_allow_html=True)
-        api_key = default_api_key
-        # 显示掩码后的key（显示前4位和后4位）
-        masked_key = f"{default_api_key[:4]}...{default_api_key[-4:]}" if len(default_api_key) > 8 else "***"
-        st.markdown(f"""
-        <div style="background: rgba(19, 180, 151, 0.1); border-left: 3px solid #13B497; 
-                    border-radius: 6px; padding: 0.6rem; margin-top: -0.5rem; margin-bottom: 0.5rem;">
-            <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin: 0;">
-                <span style="color: #13B497;">🔑</span> 当前Key: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">{masked_key}</code>
+                    border-radius: 12px; padding: 0.75rem; margin-top: 0.5rem; margin-bottom: 0.5rem;
+                    box-shadow: 0 4px 15px rgba(19, 180, 151, 0.2);">
+            <p style="color: rgba(255,255,255,0.9); font-size: 0.85rem; margin: 0;">
+                <span style="color: #13B497;">✅</span> 当前使用：<code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">{masked_key}</code>
+                <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem; margin-left: 0.5rem;">(.env配置)</span>
             </p>
         </div>
         """, unsafe_allow_html=True)
     else:
+        # 都没有配置，提示用户输入
+        api_key = ""
         st.markdown("""
-        <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); 
-                    border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">
-            <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin: 0;">
-                💡 提示：可通过创建 <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">.env</code> 文件配置API Key
+        <div style="background: rgba(255, 193, 7, 0.15); border: 1px solid rgba(255, 193, 7, 0.4); 
+                    border-radius: 12px; padding: 0.75rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <p style="color: rgba(255,255,255,0.9); font-size: 0.85rem; margin: 0;">
+                <span style="color: #FFC107;">⚠️</span> 请在上方输入API Key，或通过 <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">.env</code> 文件配置
             </p>
         </div>
         """, unsafe_allow_html=True)
-        api_key = st.text_input(
-            "🔐 API Key",
-            type="password",
-            placeholder="sk-...",
-            help="输入您的API密钥（或通过.env文件配置API_KEY）"
-        )
 
     # 分隔线
     st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1), transparent); margin: 1rem 0;"></div>', unsafe_allow_html=True)
@@ -938,7 +959,7 @@ with st.sidebar:
 # 顶部锚点 - 强制页面从这里开始
 st.markdown('<div id="top" style="height: 1px; width: 1px; visibility: hidden;"></div>', unsafe_allow_html=True)
 
-# 主标题区域
+# 主标题区域 - 优化版
 st.markdown("""
 <div class="main-header floating">
     <h1>ShowImageWeb</h1>
@@ -946,13 +967,31 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 输入区域布局
-st.markdown('<div style="max-width: 900px; margin: 0 auto 2rem auto;">', unsafe_allow_html=True)
+# 输入区域容器 - 新的现代化设计
+st.markdown("""
+<div style="max-width: 1200px; margin: 0 auto 3rem auto; padding: 0 1rem;">
+    <div class="input-section" style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); 
+                border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 20px; 
+                padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+""", unsafe_allow_html=True)
 
-# 主输入区域 - 调整列比例
-col1, col2, col3 = st.columns([8, 0.5, 3])
+# 输入区域标题
+st.markdown("""
+<div style="margin-bottom: 1.5rem;">
+    <h3 style="color: rgba(255,255,255,0.95); font-size: 1.3rem; margin-bottom: 0.5rem; 
+               display: flex; align-items: center; gap: 0.5rem;">
+        <span>✨</span> 创意输入
+    </h3>
+    <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin: 0;">
+        描述您想要生成的图像，AI将为您创作独特的艺术作品
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-with col1:
+# 主输入区域 - Prompt和按钮并列显示
+col_input, col_button = st.columns([5, 1])
+
+with col_input:
     # 确定输入框的默认值
     if st.session_state.filled_prompt:
         # 如果有新的填充内容，使用它
@@ -971,7 +1010,7 @@ with col1:
         "Prompt",
         value=default_value,
         placeholder="🎯 描述您的创意... 例如：一座漂浮在云端的未来城市，玻璃建筑反射着阳光，8K超高清",
-        height=120,
+        height=140,
         label_visibility="collapsed",
         disabled=st.session_state.is_generating,
         help="使用详细描述获得更好的生成效果"
@@ -981,14 +1020,11 @@ with col1:
     if not st.session_state.is_generating and prompt != st.session_state.saved_prompt:
         st.session_state.saved_prompt = prompt
 
-with col2:
-    st.markdown("")  # 空白列用于间距
-
-with col3:
-    st.markdown('<div style="padding-top: 2.5rem;">', unsafe_allow_html=True)
-
-    # 生成按钮
-    button_text = "立即生成" if not st.session_state.is_generating else "⏳ 生成中..."
+with col_button:
+    # 生成按钮 - 垂直居中
+    st.markdown('<div style="display: flex; align-items: center; height: 100%; padding-top: 0;">', unsafe_allow_html=True)
+    
+    button_text = "立即生成" if not st.session_state.is_generating else "生成中..."
     button_emoji = "✨" if not st.session_state.is_generating else "🔄"
 
     if st.button(
@@ -997,48 +1033,99 @@ with col3:
         use_container_width=True,
         disabled=st.session_state.is_generating,
         on_click=start_generating,
-        help="点击开始AI图像生成"
+        help="点击开始AI图像生成",
+        key="generate_button_main"
     ):
         pass
-
-  
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 分隔线
-st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(240, 147, 251, 0.1), transparent); margin: 1rem 0;"></div>', unsafe_allow_html=True)
+# 关闭输入区域容器
+st.markdown("</div></div>", unsafe_allow_html=True)
 
-# 快速示例提示 - 只在非生成状态、没有输入内容且从未生成时显示
+# 快速示例提示 - 重新设计的卡片式布局
 if not st.session_state.is_generating and not st.session_state.saved_prompt and not st.session_state.has_generated:
-    st.markdown('<div style="margin-top: 0.5rem; text-align: center;"><h4 style="color: rgba(255,255,255,0.9); margin-bottom: 0.8rem;">💡 灵感示例</h4>', unsafe_allow_html=True)
-
-    # 使用列布局创建灵感按钮
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
-
-    with col1:
-        if st.button("🏰 童话城堡", key="inspiration_1", help="点击填充童话城堡描述", use_container_width=True):
-            st.session_state.filled_prompt = "一座宏伟的童话城堡坐落在云朵之上，高耸的塔楼闪烁着金色的光芒"
-            st.rerun()
-
-    with col2:
-        if st.button("🌸 樱花庭院", key="inspiration_2", help="点击填充樱花庭院描述", use_container_width=True):
-            st.session_state.filled_prompt = "春日樱花盛开的日式庭院，粉色花瓣飘落在青石板上"
-            st.rerun()
-
-    with col3:
-        if st.button("🚀 科幻太空站", key="inspiration_3", help="点击填充科幻太空站描述", use_container_width=True):
-            st.session_state.filled_prompt = "未来主义科幻太空站，巨大的环形结构悬浮在星空之中"
-            st.rerun()
-
-    with col4:
-        if st.button("🐉 巨龙守护者", key="inspiration_4", help="点击填充巨龙守护者描述", use_container_width=True):
-            st.session_state.filled_prompt = "古老的巨龙守护着神秘的森林入口，鳞片在月光下闪闪发亮"
-            st.rerun()
-
-    with col5:
-        if st.button("🌆 赛博都市", key="inspiration_5", help="点击填充赛博都市描述", use_container_width=True):
-            st.session_state.filled_prompt = "赛博朋克风格的未来都市，霓虹灯闪烁的摩天大楼"
-            st.rerun()
-
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 2rem auto 3rem auto; padding: 0 1rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <h3 style="color: rgba(255,255,255,0.95); font-size: 1.2rem; margin-bottom: 0.5rem;">
+                💡 灵感示例
+            </h3>
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">
+                点击下方卡片快速填充创意描述
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 使用卡片式布局
+    st.markdown('<div style="max-width: 1200px; margin: 0 auto 2rem auto; padding: 0 1rem;">', unsafe_allow_html=True)
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    inspiration_cards = [
+        {
+            "emoji": "🏰",
+            "title": "童话城堡",
+            "prompt": "一座宏伟的童话城堡坐落在云朵之上，高耸的塔楼闪烁着金色的光芒",
+            "key": "inspiration_1",
+            "color": "rgba(102, 126, 234, 0.2)"
+        },
+        {
+            "emoji": "🌸",
+            "title": "樱花庭院",
+            "prompt": "春日樱花盛开的日式庭院，粉色花瓣飘落在青石板上",
+            "key": "inspiration_2",
+            "color": "rgba(240, 147, 251, 0.2)"
+        },
+        {
+            "emoji": "🚀",
+            "title": "科幻太空站",
+            "prompt": "未来主义科幻太空站，巨大的环形结构悬浮在星空之中",
+            "key": "inspiration_3",
+            "color": "rgba(19, 180, 151, 0.2)"
+        },
+        {
+            "emoji": "🐉",
+            "title": "巨龙守护者",
+            "prompt": "古老的巨龙守护着神秘的森林入口，鳞片在月光下闪闪发亮",
+            "key": "inspiration_4",
+            "color": "rgba(255, 107, 107, 0.2)"
+        },
+        {
+            "emoji": "🌆",
+            "title": "赛博都市",
+            "prompt": "赛博朋克风格的未来都市，霓虹灯闪烁的摩天大楼",
+            "key": "inspiration_5",
+            "color": "rgba(255, 193, 7, 0.2)"
+        }
+    ]
+    
+    for idx, card in enumerate(inspiration_cards):
+        with [col1, col2, col3, col4, col5][idx]:
+            st.markdown(f"""
+            <div style="background: {card['color']}; border: 2px solid rgba(255,255,255,0.1); 
+                        border-radius: 16px; padding: 1.5rem; text-align: center; 
+                        cursor: pointer; transition: all 0.3s ease; margin-bottom: 1rem;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.1);"
+                        onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.2)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)';">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">{card['emoji']}</div>
+                <div style="color: rgba(255,255,255,0.9); font-weight: 600; font-size: 0.95rem;">
+                    {card['title']}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button(
+                f"使用此示例",
+                key=card['key'],
+                use_container_width=True,
+                help=f"点击填充：{card['title']}"
+            ):
+                st.session_state.filled_prompt = card['prompt']
+                st.rerun()
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 6. 生成逻辑 (通过状态控制) ---
@@ -1170,40 +1257,51 @@ if st.session_state.is_generating or (hasattr(st.session_state, 'is_processing')
 
 # --- 7. 超现代化画廊展示区 ---
 
-# 画廊标题和装饰
+# 画廊标题和装饰 - 优化版
 st.markdown("""
-<div style="text-align: center; margin: 3rem 0 2rem 0;">
-    <h2 style="color: white; font-size: 2.5rem; margin-bottom: 1rem;">
-        🎨 AI 作品画廊
-    </h2>
-    <div style="height: 3px; background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
-                background-size: 300% 100%; animation: gradientShift 3s ease infinite;
-                border-radius: 5px; margin: 0 auto; width: 200px;"></div>
+<div style="text-align: center; margin: 4rem 0 3rem 0; padding: 0 1rem;">
+    <div style="max-width: 1200px; margin: 0 auto;">
+        <h2 style="color: white; font-size: 2.8rem; margin-bottom: 1rem; font-weight: 800;">
+            🎨 AI 作品画廊
+        </h2>
+        <div style="height: 4px; background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
+                    background-size: 300% 100%; animation: gradientShift 3s ease infinite;
+                    border-radius: 5px; margin: 0 auto; width: 300px; margin-bottom: 1rem;"></div>
+        <p style="color: rgba(255,255,255,0.7); font-size: 1rem; margin-top: 1rem;">
+            您的AI创作作品将在这里展示
+        </p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
 if not st.session_state.history:
-    # 空状态精美提示
+    # 空状态精美提示 - 优化版
     st.markdown("""
-    <div style="text-align: center; padding: 4rem 2rem; margin: 2rem 0;">
-        <div style="font-size: 5rem; margin-bottom: 2rem;">🎨</div>
-        <h3 style="color: #667eea; font-size: 1.8rem; margin-bottom: 1rem;">
+    <div style="max-width: 800px; margin: 0 auto; text-align: center; padding: 5rem 2rem;">
+        <div style="font-size: 6rem; margin-bottom: 2rem; animation: float 6s ease-in-out infinite;">🎨</div>
+        <h3 style="color: rgba(255,255,255,0.95); font-size: 2rem; margin-bottom: 1rem; font-weight: 700;">
             开始您的创作之旅
         </h3>
-        <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; line-height: 1.6;">
-            还没有生成的图像，<br>
+        <p style="color: rgba(255,255,255,0.8); font-size: 1.2rem; line-height: 1.8; margin-bottom: 3rem;">
+            还没有生成的图像<br>
             在上方描述您的创意，让AI为您创作独特的艺术作品吧！
         </p>
-        <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-            <span style="background: rgba(102, 126, 234, 0.2); padding: 0.5rem 1rem; border-radius: 20px;">
-                ✨ 高质量生成
-            </span>
-            <span style="background: rgba(240, 147, 251, 0.2); padding: 0.5rem 1rem; border-radius: 20px;">
-                🚀 秒级出图
-            </span>
-            <span style="background: rgba(19, 180, 151, 0.2); padding: 0.5rem 1rem; border-radius: 20px;">
-                💾 一键下载
-            </span>
+        <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+            <div style="background: rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.3); 
+                        padding: 1rem 1.5rem; border-radius: 25px; backdrop-filter: blur(10px);">
+                <span style="font-size: 1.2rem;">✨</span>
+                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem;">高质量生成</span>
+            </div>
+            <div style="background: rgba(240, 147, 251, 0.2); border: 1px solid rgba(240, 147, 251, 0.3); 
+                        padding: 1rem 1.5rem; border-radius: 25px; backdrop-filter: blur(10px);">
+                <span style="font-size: 1.2rem;">🚀</span>
+                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem;">秒级出图</span>
+            </div>
+            <div style="background: rgba(19, 180, 151, 0.2); border: 1px solid rgba(19, 180, 151, 0.3); 
+                        padding: 1rem 1.5rem; border-radius: 25px; backdrop-filter: blur(10px);">
+                <span style="font-size: 1.2rem;">💾</span>
+                <span style="color: rgba(255,255,255,0.9); font-weight: 500; margin-left: 0.5rem;">一键下载</span>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1214,6 +1312,9 @@ else:
     total_images = len(history_items)
     total_duration = sum(float(item['duration'].rstrip('s')) for item in history_items)
     avg_duration = total_duration / total_images if total_images > 0 else 0
+
+    # 画廊容器
+    st.markdown('<div style="max-width: 1400px; margin: 0 auto; padding: 0 1rem;">', unsafe_allow_html=True)
 
     # 动态列数布局
     rows = [history_items[i:i + gallery_cols] for i in range(0, len(history_items), gallery_cols)]
@@ -1255,6 +1356,9 @@ else:
                 # 分隔线
                 if idx < len(row_items) - 1 or row_idx < len(rows) - 1:
                     st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
+
+    # 关闭画廊容器
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # 分隔线
     st.markdown('<div style="height: 1px; background: linear-gradient(90deg, rgba(102, 126, 234, 0.3), rgba(240, 147, 251, 0.1), transparent); margin: 3rem 0;"></div>', unsafe_allow_html=True)
